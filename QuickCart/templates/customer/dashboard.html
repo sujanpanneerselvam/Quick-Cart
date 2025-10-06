@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Dashboard | QuickCart{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4"><i class="fas fa-home me-2"></i>Customer Dashboard</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-shopping-basket"></i>
+                    </div>
+                    <h5 class="card-title">Shop Products</h5>
+                    <p class="card-text">Browse our selection of fresh grocery products.</p>
+                    <a href="{{ url_for('customer_products') }}" class="btn btn-primary">View Products</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <h5 class="card-title">My Cart</h5>
+                    <p class="card-text">View and checkout items in your cart.</p>
+                    <a href="{{ url_for('customer_cart') }}" class="btn btn-primary">Go to Cart</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card dashboard-card h-100">
+                <div class="card-body text-center">
+                    <div class="icon-wrapper">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <h5 class="card-title">Order Status</h5>
+                    <p class="card-text">Track the status of your recent orders.</p>
+                    <a href="#recent-orders" class="btn btn-primary">View Orders</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 id="recent-orders" class="mb-0"><i class="fas fa-history me-2"></i>Recent Orders</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Date</th>
+                                        <th>Items</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in recent_orders %}
+                                        <tr>
+                                            <td>{{ order.order_id }}</td>
+                                            <td>{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>{{ order.items|length }}</td>
+                                            <td class="price-format">{{ order.total_price }}</td>
+                                            <td>
+                                                <span class="order-status status-{{ order.status }}">
+                                                    {{ order.status|capitalize }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>You haven't placed any orders yet.
+                        </div>
+                        <div class="text-center">
+                            <a href="{{ url_for('customer_products') }}" class="btn btn-primary">
+                                <i class="fas fa-shopping-basket me-2"></i>Shop Now
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-star me-2"></i>Membership Benefits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>Standard Delivery</h6>
+                            <p>Regular delivery service for all customers.</p>
+                            
+                            <h6><i class="fas fa-check-circle text-success me-2"></i>Basic Customer Support</h6>
+                            <p>Support during business hours.</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-crown text-warning me-2"></i>Premium Membership Benefits</h6>
+                            <ul>
+                                <li>Priority order processing</li>
+                                <li>Express delivery options</li>
+                                <li>24/7 customer support</li>
+                                <li>Special discounts and offers</li>
+                            </ul>
+                            <p class="mt-3">
+                                <i class="fas fa-info-circle me-2"></i>Select "Premium Membership" when placing an order to enjoy these benefits.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

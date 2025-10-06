@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Packing Optimization | QuickCart{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-box-open me-2"></i>Packing Optimization</h1>
+        <a href="{{ url_for('delivery_dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card algorithm-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Algorithm: 0/1 Knapsack for Packing Optimization</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        The 0/1 Knapsack algorithm is used to select orders for delivery based on their weight and value,
+                        maximizing the value of orders while respecting the truck's capacity constraint.
+                    </p>
+                    <div class="alert alert-info">
+                        <strong>Optimization Criteria:</strong><br>
+                        1. Maximize the total value (price) of orders that can be packed.<br>
+                        2. Ensure the total weight does not exceed the truck's capacity ({{ max_capacity }} kg).<br>
+                        3. Each order is either fully included or excluded (0/1 principle).
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Selected Orders for Delivery</h5>
+                </div>
+                <div class="card-body">
+                    {% if selected_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Weight (kg)</th>
+                                        <th>Value ($)</th>
+                                        <th>Type</th>
+                                        <th>Membership</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in selected_orders %}
+                                        <tr>
+                                            <td>{{ order.order_id }}</td>
+                                            <td>{{ order.weight }}</td>
+                                            <td class="price-format">{{ order.value }}</td>
+                                            <td>
+                                                {% if order.delivery_type == 'express' %}
+                                                    <span class="badge bg-danger">Express</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">Standard</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if order.premium_member %}
+                                                    <span class="badge bg-warning text-dark">Premium</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Regular</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <form style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button class="btn btn-sm btn-primary update-status-btn" 
+                                                            data-order-id="{{ order.order_id }}" 
+                                                            data-status="processing">
+                                                        Process
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-active">
+                                        <th>Total</th>
+                                        <th>{{ total_weight }} kg</th>
+                                        <th class="price-format">{{ total_value }}</th>
+                                        <th colspan="3"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>There are no pending orders to pack at the moment.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Available Orders (Not Selected)</h5>
+                </div>
+                <div class="card-body">
+                    {% set not_selected_orders = pending_orders|rejectattr('order_id', 'in', selected_orders|map(attribute='order_id')|list)|list %}
+                    
+                    {% if not_selected_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Weight (kg)</th>
+                                        <th>Value ($)</th>
+                                        <th>Type</th>
+                                        <th>Membership</th>
+                                        <th>Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in not_selected_orders %}
+                                        <tr>
+                                            <td>{{ order.order_id }}</td>
+                                            <td>{{ order.total_weight }}</td>
+                                            <td class="price-format">{{ order.total_price }}</td>
+                                            <td>
+                                                {% if order.delivery_type == 'express' %}
+                                                    <span class="badge bg-danger">Express</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">Standard</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if order.premium_member %}
+                                                    <span class="badge bg-warning text-dark">Premium</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Regular</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">Exceeds capacity</span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>All available orders have been selected for delivery.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Truck Capacity Utilization</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="min-height: 250px">
+                        {% if selected_orders %}
+                            <canvas id="packingChart" 
+                                    data-selected="{{ selected_orders|tojson }}" 
+                                    data-weight="{{ total_weight }}" 
+                                    data-capacity="{{ max_capacity }}">
+                            </canvas>
+                        {% else %}
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle me-2"></i>No data available for visualization. Process some orders to see charts.
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h6>Utilization Summary:</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Truck Capacity
+                                <span class="badge bg-primary rounded-pill">{{ max_capacity }} kg</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Used Capacity
+                                <span class="badge bg-success rounded-pill">{{ total_weight }} kg</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Available Capacity
+                                <span class="badge bg-info rounded-pill">{{ max_capacity - total_weight }} kg</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Utilization Rate
+                                <span class="badge bg-warning text-dark rounded-pill">{{ (total_weight / max_capacity * 100)|round(1) }}%</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Weight Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="min-height: 250px">
+                        {% if selected_orders %}
+                            <canvas id="orderWeightChart" 
+                                   data-selected="{{ selected_orders|tojson }}">
+                            </canvas>
+                        {% else %}
+                            <div class="alert alert-info mt-3">
+                                <i class="fas fa-info-circle me-2"></i>No order data available for visualization.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Algorithm Description</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-primary">
+                        <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>How the 0/1 Knapsack Algorithm Works:</h6>
+                        <p>This algorithm efficiently selects orders to maximize total value while respecting the truck's weight capacity.</p>
+                        <ul>
+                            <li><strong>Goal:</strong> Pack the truck optimally with orders</li>
+                            <li><strong>Constraint:</strong> Limited capacity of {{ max_capacity }} kg</li>
+                            <li><strong>Method:</strong> Dynamic programming approach that considers all possible combinations</li>
+                            <li><strong>Result:</strong> Optimal selection of orders for delivery</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/delivery.js') }}"></script>
+{% endblock %}

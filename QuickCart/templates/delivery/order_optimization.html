@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Optimization | QuickCart{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-sort-amount-down me-2"></i>Order Optimization</h1>
+        <a href="{{ url_for('delivery_dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card algorithm-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Algorithm: Merge Sort for Order Prioritization</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        The Merge Sort algorithm is used to prioritize orders based on their urgency and customer membership status.
+                        This ensures that higher priority orders are processed first.
+                    </p>
+                    <div class="alert alert-info">
+                        <strong>Priority Rules:</strong><br>
+                        1. Express orders have higher priority than Standard orders.<br>
+                        2. Within the same delivery type, Premium members have higher priority.<br>
+                        3. For orders with the same delivery type and membership status, older orders are prioritized.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-7">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Priority Queue (Sorted)</h5>
+                </div>
+                <div class="card-body">
+                    {% if sorted_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Type</th>
+                                        <th>Membership</th>
+                                        <th>Date</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in sorted_orders %}
+                                        <tr>
+                                            <td>{{ order.order_id }}</td>
+                                            <td>
+                                                {% if order.delivery_type == 'express' %}
+                                                    <span class="badge bg-danger">Express</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">Standard</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if order.premium_member %}
+                                                    <span class="badge bg-warning text-dark">Premium</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Regular</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ order.created_at }}</td>
+                                            <td>
+                                                <form style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button class="btn btn-sm btn-primary update-status-btn" 
+                                                            data-order-id="{{ order.order_id }}" 
+                                                            data-status="processing">
+                                                        Process
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>There are no pending orders to prioritize at the moment.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-5">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="orderPriorityChart" data-orders="{{ sorted_orders|tojson }}"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Algorithm Description</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-primary">
+                        <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>How the Merge Sort Algorithm Works:</h6>
+                        <p>This algorithm sorts orders by priority, considering delivery type and membership status.</p>
+                        <ul>
+                            <li><strong>Priority Scoring:</strong></li>
+                            <ul>
+                                <li>Express delivery: +2 points</li>
+                                <li>Premium membership: +1 point</li>
+                            </ul>
+                            <li><strong>Method:</strong> Divide-and-conquer approach that breaks down the list into smaller parts</li>
+                            <li><strong>Time Complexity:</strong> O(n log n) - efficient for large datasets</li>
+                            <li><strong>Result:</strong> Orders sorted by highest priority first</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/delivery.js') }}"></script>
+{% endblock %}

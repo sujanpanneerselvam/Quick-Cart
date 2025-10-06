@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{% block title %}Route Optimization | QuickCart{% endblock %}
+
+{% block content %}
+<!-- Toast for status updates -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="statusToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <strong class="me-auto"><i class="fas fa-check-circle me-2"></i>Status Update</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="statusToastBody">
+            Order status updated successfully.
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-route me-2"></i>Route Optimization</h1>
+        <a href="{{ url_for('delivery_dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card algorithm-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Algorithm: Dynamic Programming for Route Optimization</h5>
+                </div>
+                <div class="card-body">
+                    <p>
+                        The Traveling Salesman Problem (TSP) is solved using Dynamic Programming to find the optimal delivery route,
+                        minimizing the total distance traveled while visiting all delivery locations.
+                    </p>
+                    <div class="alert alert-info">
+                        <strong>Optimization Criteria:</strong><br>
+                        1. Visit every delivery location exactly once.<br>
+                        2. Return to the warehouse after all deliveries are completed.<br>
+                        3. Minimize the total distance traveled for the entire route.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Delivery Route Visualization</h5>
+                </div>
+                <div class="card-body">
+                    {% if processing_orders %}
+                        <div id="routeMap" 
+                             data-locations="{{ locations|tojson }}" 
+                             data-route="{{ route|tojson }}" 
+                             class="chart-container"
+                             style="min-height: 400px; width: 100%;">
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6>Route Details:</h6>
+                            <ol class="list-group list-group-numbered">
+                                {% for location in route_locations %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        {% if loop.first %}
+                                            <span><strong>{{ location.name }}</strong> (Starting Point)</span>
+                                        {% elif loop.last %}
+                                            <span><strong>{{ location.name }}</strong> (Return to Warehouse)</span>
+                                        {% else %}
+                                            <span>{{ location.name }}</span>
+                                            {% if location.order_id %}
+                                                <span class="badge bg-primary rounded-pill">Order #{{ location.order_id }}</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ol>
+                        </div>
+                        
+                        <div class="alert alert-success mt-4">
+                            <i class="fas fa-info-circle me-2"></i>Total estimated distance: <strong>{{ total_distance|round(2) }} units</strong>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>There are no orders in processing status to optimize routes for.
+                        </div>
+                        <div class="text-center mt-4">
+                            <p>Process some orders first to see route optimization in action.</p>
+                            <a href="{{ url_for('order_optimization') }}" class="btn btn-primary">
+                                <i class="fas fa-sort-amount-down me-2"></i>Go to Order Optimization
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Orders in Processing</h5>
+                </div>
+                <div class="card-body">
+                    {% if processing_orders %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Address</th>
+                                        <th>Customer Type</th>
+                                        <th>Delivery Type</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in processing_orders %}
+                                        <tr>
+                                            <td>{{ order.order_id }}</td>
+                                            <td>{{ order.address }}</td>
+                                            <td>
+                                                {% if order.premium_member %}
+                                                    <span class="badge bg-warning text-dark">Premium</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Regular</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if order.delivery_type == 'express' %}
+                                                    <span class="badge bg-danger">Express</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">Standard</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="order-status status-{{ order.status }}">
+                                                    {{ order.status|capitalize }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if order.status == 'processing' %}
+                                                    <button class="btn btn-sm btn-success update-status-btn" 
+                                                            data-order-id="{{ order.order_id }}" 
+                                                            data-status="shipped">
+                                                        <i class="fas fa-truck me-1"></i> Mark Shipped
+                                                    </button>
+                                                {% elif order.status == 'shipped' %}
+                                                    <button class="btn btn-sm btn-primary update-status-btn" 
+                                                            data-order-id="{{ order.order_id }}" 
+                                                            data-status="delivered">
+                                                        <i class="fas fa-check-circle me-1"></i> Mark Delivered
+                                                    </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>There are no orders being processed at the moment.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Delivery Instructions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6><i class="fas fa-truck me-2 text-primary"></i>Delivery Truck</h6>
+                        <p>Follow the optimized route to ensure efficient delivery of all orders.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-shipping-fast me-2 text-danger"></i>Express Orders</h6>
+                        <p>Priority should be given to express orders during delivery.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-star me-2 text-warning"></i>Premium Members</h6>
+                        <p>Ensure premium members receive special attention during delivery.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6><i class="fas fa-map-marker-alt me-2 text-success"></i>Navigation</h6>
+                        <p>Use the provided route map to navigate between delivery locations.</p>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Mark orders as "Shipped" once loaded onto the delivery truck, and "Delivered" after successful delivery.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Algorithm Description</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-primary">
+                        <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>How the TSP Algorithm Works:</h6>
+                        <p>The Traveling Salesman Problem algorithm finds the most efficient route to visit all delivery locations.</p>
+                        <ul>
+                            <li><strong>Goal:</strong> Minimize total distance traveled</li>
+                            <li><strong>Constraint:</strong> Visit every location exactly once and return to start</li>
+                            <li><strong>Method:</strong> Dynamic programming using bit masking to track visited locations</li>
+                            <li><strong>Result:</strong> Optimal delivery route with minimum travel distance</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/delivery.js') }}"></script>
+<script src="{{ url_for('static', filename='js/visualization.js') }}"></script>
+{% endblock %}

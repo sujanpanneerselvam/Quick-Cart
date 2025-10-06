@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Cart | QuickCart{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4"><i class="fas fa-shopping-cart me-2"></i>Shopping Cart</h1>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Cart Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="cart-container">
+                        {% if session.cart %}
+                            {% for product_id, item in session.cart.items() %}
+                                <div class="cart-item" id="cart-item-{{ product_id }}">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <h5>{{ item.name }}</h5>
+                                            <p class="text-muted">Price: <span class="price-format">{{ item.price }}</span> | Weight: {{ item.weight }} kg</p>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <form class="update-cart-form">
+                                                {{ order_form.csrf_token }}
+                                                <input type="hidden" name="product_id" value="{{ product_id }}">
+                                                <div class="input-group">
+                                                    <button type="button" class="btn btn-outline-secondary quantity-decrement">-</button>
+                                                    <input type="number" name="quantity" value="{{ item.quantity }}" min="0" max="10" class="form-control text-center quantity-input" readonly>
+                                                    <button type="button" class="btn btn-outline-secondary quantity-increment">+</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="col-md-3 text-end">
+                                            <span class="fw-bold price-format">{{ item.price * item.quantity }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info">
+                                Your cart is empty.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% if session.cart %}
+                        {% set total_price = namespace(value=0) %}
+                        {% set total_weight = namespace(value=0) %}
+                        
+                        {% for item in session.cart.values() %}
+                            {% set total_price.value = total_price.value + (item.price * item.quantity) %}
+                            {% set total_weight.value = total_weight.value + (item.weight * item.quantity) %}
+                        {% endfor %}
+                        
+                        <div class="cart-total mb-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Subtotal:</span>
+                                <span class="price-format" id="total-price">{{ total_price.value }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span>Total Weight:</span>
+                                <span id="total-weight">{{ total_weight.value }} kg</span>
+                            </div>
+                        </div>
+                        
+                        <form method="post" action="{{ url_for('place_order') }}" id="order-form">
+                            {{ order_form.hidden_tag() }}
+                            
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Delivery Address</label>
+                                {{ order_form.address(class="form-control", placeholder="Enter your delivery address") }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    {{ order_form.premium_member(class="form-check-input") }}
+                                    <label class="form-check-label" for="premium_member">
+                                        Premium Membership
+                                    </label>
+                                </div>
+                                <small class="text-muted">Premium members get priority in order processing.</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Delivery Type</label>
+                                <div class="form-check">
+                                    {{ order_form.delivery_type(class="form-check-input") }}
+                                    {% for subfield in order_form.delivery_type %}
+                                        <div class="form-check">
+                                            {{ subfield(class="form-check-input") }}
+                                            {{ subfield.label(class="form-check-label") }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <small class="text-muted">Express delivery is faster but has limited capacity.</small>
+                            </div>
+                            
+                            <div class="d-grid">
+                                {{ order_form.submit(class="btn btn-primary btn-lg checkout-btn") }}
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>Your cart is empty. Add some products to place an order.</p>
+                        </div>
+                        <div class="d-grid">
+                            <a href="{{ url_for('customer_products') }}" class="btn btn-primary">
+                                <i class="fas fa-shopping-basket me-2"></i>Browse Products
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Delivery Information</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-truck me-2 text-primary"></i>
+                            <strong>Standard Delivery:</strong> 2-3 business days
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-shipping-fast me-2 text-primary"></i>
+                            <strong>Express Delivery:</strong> Next business day
+                        </li>
+                        <li>
+                            <i class="fas fa-star me-2 text-warning"></i>
+                            <strong>Premium Members:</strong> Priority order processing
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+{% endblock %}
